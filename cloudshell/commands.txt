@@ -1,0 +1,270 @@
+# Azure Serverless Event-Driven Platform
+# Useful CLI Commands for Testing and Monitoring
+
+## Configuration Variables (Update these)
+RESOURCE_GROUP="rg-serverless-dev"
+STORAGE_ACCOUNT="stguploaddev"
+FUNCTION_APP="func-blob-processor-dev"
+COSMOS_ACCOUNT="cosmos-serverless-dev"
+COSMOS_DATABASE="ProcessedData"
+COSMOS_CONTAINER="FileProcessingResults"
+CONTAINER_NAME="uploads"
+
+# ==========================================
+# BLOB STORAGE OPERATIONS
+# ==========================================
+
+## List all blobs in container
+az storage blob list \
+  --account-name "$STORAGE_ACCOUNT" \
+  --container-name "$CONTAINER_NAME" \
+  --output table
+
+## Upload a single file
+az storage blob upload \
+  --account-name "$STORAGE_ACCOUNT" \
+  --container-name "$CONTAINER_NAME" \
+  --name "test-file.txt" \
+  --file "./test-files/sample-document.txt" \
+  --overwrite
+
+## Download a blob
+az storage blob download \
+  --account-name "$STORAGE_ACCOUNT" \
+  --container-name "$CONTAINER_NAME" \
+  --name "sample-document.txt" \
+  --file "./downloaded-file.txt"
+
+## Delete a blob
+az storage blob delete \
+  --account-name "$STORAGE_ACCOUNT" \
+  --container-name "$CONTAINER_NAME" \
+  --name "sample-document.txt"
+
+## Get blob properties (size, modified date)
+az storage blob show \
+  --account-name "$STORAGE_ACCOUNT" \
+  --container-name "$CONTAINER_NAME" \
+  --name "sample-document.txt"
+
+# ==========================================
+# FUNCTION APP MONITORING
+# ==========================================
+
+## View function app details
+az functionapp show \
+  --name "$FUNCTION_APP" \
+  --resource-group "$RESOURCE_GROUP"
+
+## List all functions in app
+az functionapp function list \
+  --name "$FUNCTION_APP" \
+  --resource-group "$RESOURCE_GROUP"
+
+## Get function details
+az functionapp function show \
+  --name "$FUNCTION_APP" \
+  --resource-group "$RESOURCE_GROUP" \
+  --function-name "BlobProcessor"
+
+## View recent function logs (tail)
+az functionapp log tail \
+  --name "$FUNCTION_APP" \
+  --resource-group "$RESOURCE_GROUP"
+
+## View specific invocation logs
+az functionapp log tail \
+  --name "$FUNCTION_APP" \
+  --resource-group "$RESOURCE_GROUP" \
+  --max-lines 50
+
+## Get function app connection strings
+az functionapp config appsettings list \
+  --name "$FUNCTION_APP" \
+  --resource-group "$RESOURCE_GROUP"
+
+# ==========================================
+# EVENT GRID OPERATIONS
+# ==========================================
+
+## List Event Grid subscriptions
+az eventgrid event-subscription list \
+  --resource-name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --resource-type "Microsoft.Storage/storageAccounts"
+
+## Get subscription details
+az eventgrid event-subscription show \
+  --name "blob-upload-to-function" \
+  --resource-name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --resource-type "Microsoft.Storage/storageAccounts"
+
+## Test Event Grid topic
+az eventgrid topic event-subscription list \
+  --topic-name "eventgrid-topic-dev" \
+  --resource-group "$RESOURCE_GROUP"
+
+# ==========================================
+# COSMOS DB QUERIES
+# ==========================================
+
+## List Cosmos DB accounts
+az cosmosdb show \
+  --name "$COSMOS_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP"
+
+## Get Cosmos DB connection string
+az cosmosdb keys list \
+  --name "$COSMOS_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --type connection-strings
+
+## View database details
+az cosmosdb sql database show \
+  --account-name "$COSMOS_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --name "$COSMOS_DATABASE"
+
+## View container details
+az cosmosdb sql container show \
+  --account-name "$COSMOS_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --database-name "$COSMOS_DATABASE" \
+  --name "$COSMOS_CONTAINER"
+
+# ==========================================
+# RESOURCE MONITORING
+# ==========================================
+
+## Get resource group info
+az group show \
+  --name "$RESOURCE_GROUP"
+
+## List all resources in group
+az resource list \
+  --resource-group "$RESOURCE_GROUP" \
+  --output table
+
+## View resource creation history
+az monitor activity-log list \
+  --resource-group "$RESOURCE_GROUP" \
+  --query "[0:10]" \
+  --output table
+
+## Check resource costs
+az consumption usage list \
+  --output table
+
+# ==========================================
+# FUNCTION DEPLOYMENT
+# ==========================================
+
+## Deploy function from local code
+func azure functionapp publish "$FUNCTION_APP" --python --build remote
+
+## Deploy with build pack
+func azure functionapp publish "$FUNCTION_APP" --python --build remote
+
+## Deploy specific function
+func azure functionapp publish "$FUNCTION_APP" --python
+
+## List function app extensions
+az functionapp deployment slot list \
+  --name "$FUNCTION_APP" \
+  --resource-group "$RESOURCE_GROUP"
+
+# ==========================================
+# TROUBLESHOOTING COMMANDS
+# ==========================================
+
+## Check function app status
+az functionapp show \
+  --name "$FUNCTION_APP" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query "state"
+
+## Get function app diagnostic settings
+az monitor diagnostic-settings show \
+  --resource "/subscriptions/{sub}/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/sites/$FUNCTION_APP"
+
+## Check storage account connectivity
+az storage account show \
+  --name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query "primaryEndpoints"
+
+## Verify Cosmos DB connectivity
+az cosmosdb check-name-exists \
+  --name "$COSMOS_ACCOUNT"
+
+# ==========================================
+# CLEANUP COMMANDS
+# ==========================================
+
+## Delete entire resource group (WARNING: Removes everything)
+az group delete \
+  --name "$RESOURCE_GROUP" \
+  --yes --no-wait
+
+## Delete specific resource
+az resource delete \
+  --resource-group "$RESOURCE_GROUP" \
+  --name "$FUNCTION_APP" \
+  --resource-type "Microsoft.Web/sites"
+
+## Clear all blobs in container
+az storage blob delete-batch \
+  --source "$CONTAINER_NAME" \
+  --account-name "$STORAGE_ACCOUNT"
+
+# ==========================================
+# MONITORING & ALERTING
+# ==========================================
+
+## View function invocation metrics
+az monitor metrics list \
+  --resource "/subscriptions/{sub}/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/sites/$FUNCTION_APP" \
+  --metric "FunctionExecutionCount"
+
+## Create alert for function failures
+az monitor metrics alert create \
+  --name "function-failures" \
+  --resource-group "$RESOURCE_GROUP" \
+  --scopes "/subscriptions/{sub}/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/sites/$FUNCTION_APP" \
+  --condition "avg FunctionExecutionCount < 5 over 5m"
+
+# ==========================================
+# QUICK STATUS CHECK
+# ==========================================
+
+## One-command status check
+echo "=== Function App Status ===" && \
+az functionapp show --name "$FUNCTION_APP" --resource-group "$RESOURCE_GROUP" --query "state" && \
+echo "=== Storage Account Status ===" && \
+az storage account show --name "$STORAGE_ACCOUNT" --resource-group "$RESOURCE_GROUP" --query "provisioningState" && \
+echo "=== Cosmos DB Status ===" && \
+az cosmosdb show --name "$COSMOS_ACCOUNT" --resource-group "$RESOURCE_GROUP" --query "provisioningState"
+
+# ==========================================
+# PERFORMANCE TESTING
+# ==========================================
+
+## Upload 10 test files to stress test
+for i in {1..10}; do
+  echo "Uploading test file $i..."
+  echo "Test content $i" > "/tmp/test-$i.txt"
+  az storage blob upload \
+    --account-name "$STORAGE_ACCOUNT" \
+    --container-name "$CONTAINER_NAME" \
+    --name "stress-test-$i.txt" \
+    --file "/tmp/test-$i.txt" \
+    --overwrite
+done
+
+## Monitor function performance
+echo "Checking function metrics..."
+az monitor metrics list \
+  --resource "/subscriptions/{sub}/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/sites/$FUNCTION_APP" \
+  --metric "FunctionExecutionCount,FunctionExecutionUnits" \
+  --interval PT1M
