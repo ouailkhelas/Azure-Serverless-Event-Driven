@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Azure Serverless Event-Driven Platform
-# Deployment Script
-
 set -e
 
 echo "=========================================="
@@ -11,13 +8,6 @@ echo "Deployment Script"
 echo "=========================================="
 echo ""
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-# Configuration
 RESOURCE_GROUP="rg-serverless-dev"
 LOCATION="eastus"
 FUNCTION_NAME="BlobProcessor"
@@ -38,19 +28,17 @@ echo ""
 echo -e "${GREEN}Infrastructure Deployed Successfully!${NC}"
 echo ""
 
-# Get outputs
 STORAGE_ACCOUNT=$(terraform output -raw storage_account_name)
 FUNCTION_APP=$(terraform output -raw function_app_name)
 COSMOS_ACCOUNT=$(terraform output -raw cosmos_account_name)
 
-echo "📊 Deployment Summary:"
+echo " Deployment Summary:"
 echo "├── Storage Account: $STORAGE_ACCOUNT"
 echo "├── Function App: $FUNCTION_APP"
 echo "├── Cosmos Account: $COSMOS_ACCOUNT"
 echo "└── Resource Group: $RESOURCE_GROUP"
 echo ""
 
-# Return to root directory
 cd ..
 
 echo -e "${YELLOW}Step 4: Creating Function Code Structure${NC}"
@@ -60,7 +48,6 @@ echo ""
 echo -e "${YELLOW}Step 5: Deploying Function Code${NC}"
 cd function-code/
 
-# Create function.json
 cat > $FUNCTION_NAME/function.json << 'EOF'
 {
   "scriptFile": "blob_processor.py",
@@ -74,7 +61,6 @@ cat > $FUNCTION_NAME/function.json << 'EOF'
 }
 EOF
 
-# Create blob_processor.py
 cat > $FUNCTION_NAME/blob_processor.py << 'EOF'
 import azure.functions as func
 import json
@@ -186,7 +172,6 @@ def store_to_cosmos(document):
     container.create_item(body=document)
 EOF
 
-# Create requirements.txt
 cat > $FUNCTION_NAME/requirements.txt << 'EOF'
 azure-functions
 azure-cosmos
@@ -197,7 +182,6 @@ echo "✅ Function code created"
 echo ""
 
 echo -e "${YELLOW}Step 6: Deploying Function to Azure${NC}"
-# Use Azure CLI to deploy function
 FUNCTION_APP_NAME=$(cd ../terraform && terraform output -raw function_app_name)
 
 func azure functionapp publish $FUNCTION_APP_NAME --python --build remote 2>/dev/null || echo "⚠️  Function deployment requires local Azure Functions Core Tools"
@@ -209,18 +193,18 @@ echo -e "${GREEN}=========================================="
 echo "Deployment Complete!"
 echo "==========================================${NC}"
 echo ""
-echo "📋 Next Steps:"
+echo " Next Steps:"
 echo "  1. Go to Azure Portal → Function App"
 echo "  2. Verify Event Grid subscription is active"
 echo "  3. Upload test files to storage account"
 echo "  4. Monitor function executions"
 echo "  5. Check Cosmos DB for results"
 echo ""
-echo "🧪 Manual Function Deployment:"
+echo " Manual Function Deployment:"
 echo "  cd function-code"
 echo "  func azure functionapp publish $FUNCTION_APP_NAME --python --build remote"
 echo ""
-echo "📁 Test Upload:"
+echo " Test Upload:"
 echo "  az storage blob upload \\"
 echo "    --account-name $STORAGE_ACCOUNT \\"
 echo "    --container-name uploads \\"
