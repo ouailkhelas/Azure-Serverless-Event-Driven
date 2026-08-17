@@ -4,18 +4,16 @@ resource "azurerm_resource_group" "rg" {
   tags     = var.tags
 }
 
-# Storage Account (for file uploads)
 resource "azurerm_storage_account" "storage" {
   name                     = var.storage_account_name
   resource_group_name      = azurerm_resource_group.rg.name
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
-  account_replication_type = "LRS"
+  account_replication_type = "ZRS"
 
   tags = var.tags
 }
 
-# Storage Container
 resource "azurerm_storage_container" "container" {
   name                  = var.container_name
   storage_account_name  = azurerm_storage_account.storage.name
@@ -47,14 +45,12 @@ resource "azurerm_cosmosdb_account" "cosmos" {
   tags = var.tags
 }
 
-# Cosmos DB Database
 resource "azurerm_cosmosdb_sql_database" "db" {
   name                = var.cosmos_database_name
   account_name        = azurerm_cosmosdb_account.cosmos.name
   resource_group_name = azurerm_resource_group.rg.name
 }
 
-# Cosmos DB Container
 resource "azurerm_cosmosdb_sql_container" "container" {
   name                = var.cosmos_container_name
   account_name        = azurerm_cosmosdb_account.cosmos.name
@@ -79,7 +75,6 @@ resource "azurerm_app_service_plan" "plan" {
   tags = var.tags
 }
 
-# Storage Account for Function App (required by Azure Functions)
 resource "azurerm_storage_account" "function_storage" {
   name                     = var.function_storage_name
   resource_group_name      = azurerm_resource_group.rg.name
@@ -90,7 +85,6 @@ resource "azurerm_storage_account" "function_storage" {
   tags = var.tags
 }
 
-# Function App
 resource "azurerm_function_app" "func" {
   name                       = var.function_app_name
   location                   = azurerm_resource_group.rg.location
@@ -118,7 +112,6 @@ resource "azurerm_function_app" "func" {
   ]
 }
 
-# Event Grid Topic
 resource "azurerm_eventgrid_topic" "topic" {
   name                = var.event_grid_topic_name
   location            = azurerm_resource_group.rg.location
@@ -127,7 +120,6 @@ resource "azurerm_eventgrid_topic" "topic" {
   tags = var.tags
 }
 
-# Event Grid Subscription (Storage Blob Events to Function)
 resource "azurerm_eventgrid_event_subscription" "blob_to_function" {
   name              = "blob-upload-to-function"
   scope             = azurerm_storage_account.storage.id
@@ -150,7 +142,6 @@ resource "azurerm_eventgrid_event_subscription" "blob_to_function" {
   ]
 }
 
-# Key Vault for storing secrets (optional but recommended)
 resource "azurerm_key_vault" "vault" {
   name                        = var.key_vault_name
   location                    = azurerm_resource_group.rg.location
