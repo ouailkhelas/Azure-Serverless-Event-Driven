@@ -50,7 +50,7 @@ User Upload File
 | **Cosmos DB** | NoSQL database | Flexible schema, automatic scaling |
 
 
-## Q✅ uick Start
+## ✅ Quick Start
 
 ### Step 1: Deploy Infrastructure
 ```bash
@@ -59,12 +59,12 @@ bash deploy.sh
 ```
 
 Creates:
-- Storage Account (file uploads)
-- Function App (serverless processing)
-- Cosmos DB (store results)
-- Event Grid (event routing)
-- App Service Plan (compute)
-- Key Vault (encryption)
+- Storage Account
+- Function App 
+- Cosmos DB
+- Event Grid 
+- App Service Plan
+- Key Vault
 
 ### Step 2: Configure Portal
 Follow `portal/eventgrid-config.md`:
